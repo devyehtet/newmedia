@@ -30,19 +30,25 @@ export default function PostPage() {
   const params = useParams()
 
   useEffect(() => {
+    if (!params?.id) return
+
     const fetchArticle = () => {
-      const storedArticles = localStorage.getItem('articles')
-      if (storedArticles && params.id) {
-        const articles: Article[] = JSON.parse(storedArticles)
-        const foundArticle = articles.find(a => a.id === Number(params.id))
-        if (foundArticle) {
-          setArticle(foundArticle)
+      try {
+        const storedArticles = localStorage.getItem('articles')
+        if (storedArticles) {
+          const articles: Article[] = JSON.parse(storedArticles)
+          const foundArticle = articles.find(a => a.id === Number(params.id))
+          if (foundArticle) {
+            setArticle(foundArticle)
+          }
         }
+      } catch (error) {
+        console.error('Error fetching article:', error)
       }
     }
 
     fetchArticle()
-  }, [params.id])
+  }, [params?.id])
 
   if (!article) {
     return (
@@ -56,17 +62,20 @@ export default function PostPage() {
     )
   }
 
+  // Split content into paragraphs and filter out empty strings
+  const paragraphs = article.content.split('\n').filter(Boolean)
+
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
         <Button variant="ghost" asChild>
-          <Link href="/" className="gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Link>
         </Button>
       </div>
-      <article className="prose prose-stone dark:prose-invert max-w-none">
+      <article>
         <Card>
           <div className="relative aspect-[2/1] overflow-hidden">
             <Image
@@ -92,28 +101,27 @@ export default function PostPage() {
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <User className="h-4 w-4" />
-                  {article.author || 'Anonymous'}
+                  <span>{article.author || 'Anonymous'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {new Date(article.createdAt).toLocaleDateString()}
+                  <span>{new Date(article.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {article.readTime || '5 min read'}
+                  <span>{article.readTime || '5 min read'}</span>
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div 
-              className="prose prose-stone dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ 
-                __html: article.content.split('\n').map(paragraph => 
-                  paragraph ? `<p>${paragraph}</p>` : ''
-                ).join('')
-              }}
-            />
+            <div className="prose prose-stone dark:prose-invert max-w-none">
+              {paragraphs.map((paragraph, index) => (
+                <p key={index} className="mb-4 last:mb-0">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
           </CardContent>
           <CardFooter className="border-t">
             <div className="flex w-full justify-between">
